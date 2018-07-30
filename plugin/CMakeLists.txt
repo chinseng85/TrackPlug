@@ -39,6 +39,7 @@ target_link_libraries(TrackPlug
   gcc
   ScePower_stub
   kuio_stub
+  SceKernelModulemgr_stub
 )
 
 set_target_properties(TrackPlug

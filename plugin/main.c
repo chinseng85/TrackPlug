@@ -21,7 +21,6 @@ static uint64_t playtime_start = 0;
 static uint64_t tick_start = 0;
 
 static void load_playtime(const char *titleid) {
-
     snprintf(playtime_bin_path, 128, "ux0:/data/TrackPlug/%s.bin", titleid);
     tick_start = sceKernelGetProcessTimeWide();
 
@@ -39,8 +38,8 @@ static void load_playtime(const char *titleid) {
 }
 
 static void write_playtime(uint64_t playtime) {
-
-    SceUID fd = sceIoOpen(playtime_bin_path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+    SceUID fd = sceIoOpen(playtime_bin_path,
+            SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
     if (fd < 0) {
         return;
     }
@@ -50,7 +49,6 @@ static void write_playtime(uint64_t playtime) {
 }
 
 void write_title(const char *titleid, const char *title) {
-
     char path[128];
     snprintf(path, 128, "ux0:/data/TrackPlugArchive/%s.txt", titleid);
 
@@ -93,7 +91,6 @@ static int check_adrenaline() {
 }
 
 int sub_810053F8_patched(int a1, int a2) {
-
     char *pspemu_titleid = (char *)(a2 + 68);
 
     // If using custom bubble
@@ -108,10 +105,7 @@ int sub_810053F8_patched(int a1, int a2) {
 }
 
 static int tracker_thread(SceSize args, void *argp) {
-
-    while(1) {
-        uint64_t tick_now = sceKernelGetProcessTimeWide();
-
+    while (1) {
         if (is_pspemu_loaded) {
             // Check if XMB/game has changed
             if (!is_pspemu_custom_bbl && !check_adrenaline()) {
@@ -123,7 +117,8 @@ static int tracker_thread(SceSize args, void *argp) {
             goto CONT;
         }
 
-        write_playtime(playtime_start + (tick_now - tick_start)/SECOND);
+        write_playtime(playtime_start +
+                (sceKernelGetProcessTimeWide() - tick_start)/SECOND);
 
 CONT:
         sceKernelDelayThread(SAVE_PERIOD * SECOND);
@@ -134,12 +129,10 @@ CONT:
 
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
-
     char titleid[12];
     sceAppMgrAppParamGetString(0, 12, titleid, 12);
 
     if (!strncmp(titleid, "NPXS10028", 9)) {
-
         tai_module_info_t tai_info;
         tai_info.size = sizeof(tai_module_info_t);
         taiGetModuleInfo("ScePspemu", &tai_info);
@@ -149,13 +142,16 @@ int module_start(SceSize argc, const void *args) {
                 tai_info.modid,
                 0, 0x53F8, 1,
                 sub_810053F8_patched);
-
     } else {
-
         load_playtime(titleid);
     }
 
-    SceUID tracker_thread_id = sceKernelCreateThread("TrackPlugX", tracker_thread, 0x10000100, 0x10000, 0, 0, NULL);
+    SceUID tracker_thread_id = sceKernelCreateThread(
+            "TrackPlugX",
+            tracker_thread,
+            0x10000100,
+            0x10000,
+            0, 0, NULL);
     if (tracker_thread_id >= 0)
         sceKernelStartThread(tracker_thread_id, 0, NULL);
 
@@ -163,7 +159,6 @@ int module_start(SceSize argc, const void *args) {
 }
 
 int module_stop(SceSize argc, const void *args) {
-
     if (sub_810053F8_hookid >= 0) {
         taiHookRelease(sub_810053F8_hookid, sub_810053F8_hookref);
     }

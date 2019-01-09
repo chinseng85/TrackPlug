@@ -64,15 +64,15 @@ for i, file in pairs(tbl) do
 		local titleid = string.sub(file.name,1,-5)
 		local regioncode = string.sub(file.name,1,4)
 		if regioncode == "PCSA" or regioncode == "PCSE" then
-			file.region = "USA"
+			file.region = "US"
 		elseif regioncode == "PCSB" then
-			file.region = "EUR"
+			file.region = "EU"
 		elseif regioncode == "PCSF" then
-			file.region = "AUS"
+			file.region = "AU"
 		elseif regioncode == "PCSG" then
-			file.region = "JPN"
+			file.region = "JP"
 		elseif regioncode == "PCSH" then
-			file.region = "ASN"
+			file.region = "ASIA"
 		else
 			file.region = "UNK"
 		end
@@ -270,6 +270,7 @@ local big_tbl = {}
 function RenderList()
 	local r_max = 0
 	local r = 0
+	big_tbl = {}
 	if #tbl < 4 then
 		r_max = 8
 	else
@@ -357,7 +358,7 @@ while #tbl > 0 do
 				new_list_idx = #tbl
 			end
 			mov_y = 1
-			mov_step = 22
+			mov_step = 33
 		end
 	elseif Controls.check(pad, SCE_CTRL_DOWN) and mov_y == 0 then
 		if freeze then
@@ -368,7 +369,7 @@ while #tbl > 0 do
 				new_list_idx = 1
 			end
 			mov_y = -1
-			mov_step = -22
+			mov_step = -33
 		end
 	elseif Controls.check(pad, SCE_CTRL_LTRIGGER) and not Controls.check(oldpad, SCE_CTRL_LTRIGGER) and not freeze then
 		order_idx = order_idx - 1

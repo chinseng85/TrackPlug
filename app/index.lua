@@ -65,14 +65,14 @@ for i, file in pairs(tbl) do
 		local regioncode = string.sub(file.name,1,4)
 		if regioncode == "PCSA" or regioncode == "PCSE" then
 			file.region = "US"
-		elseif regioncode == "PCSB" then
+		elseif regioncode == "PCSB" or regioncode == "PCSF" then
 			file.region = "EU"
-		elseif regioncode == "PCSF" then
-			file.region = "AU"
-		elseif regioncode == "PCSG" then
+		elseif regioncode == "PCSC" or regioncode == "PCSG" then
 			file.region = "JP"
-		elseif regioncode == "PCSH" then
+		elseif regioncode == "PCSD" or regioncode == "PCSH" then
 			file.region = "ASIA"
+		elseif string.sub(file.name,1,6) == "PSPEMU" then
+			file.region = "PSP/PSX"
 		else
 			file.region = "UNK"
 		end

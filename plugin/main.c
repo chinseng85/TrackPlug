@@ -1,183 +1,172 @@
 #include <vitasdk.h>
 #include <taihen.h>
-#include <kuio.h>
-#include <libk/string.h>
-#include <libk/stdio.h>
 
-static SceUID hook;
-static tai_hook_ref_t ref;
+#define SECOND        1000000
+#define SAVE_PERIOD   10
 
-static char real_titleid[16];
-static char titleid[128];
-static char full_title[128];
+int snprintf(char *s, size_t n, const char *format, ...);
 
-static char fname[256];
-static char fname_title[256];
+// ScePspemu
+static SceUID         sub_810053F8_hookid  = -1;
+static tai_hook_ref_t sub_810053F8_hookref = {0};
 
-static uint64_t playtime = 0;
-static uint64_t tick = 0;
+static char adrenaline_titleid[12];
 
-static char playtime_loaded = 0;
+static uint8_t is_pspemu_loaded = 0;
+static uint8_t is_pspemu_custom_bbl = 0;
+static uint8_t is_playtime_loaded = 0;
 
-static int (* ScePspemuConvertAddress)(uint32_t addr, int mode, uint32_t cache_size);
-#define ADRENALINE_ADDRESS 0xABCDE000
-#define ADRENALINE_SIZE 0x2000
+static char playtime_bin_path[128];
+static uint64_t playtime_start = 0;
+static uint64_t tick_start = 0;
 
-void load_playtime() {
-	// Getting current playtime
-	SceUID fd;
-	sprintf(fname, "ux0:/data/TrackPlug/%s.bin", titleid);
-	kuIoOpen(fname, SCE_O_RDONLY, &fd);
-	if (fd >= 0){
-		kuIoRead(fd, &playtime, sizeof(uint64_t));
-		kuIoClose(fd);
-	} else {
-		playtime = 0;
-	}
-	playtime_loaded = 1;
+static void load_playtime(const char *titleid) {
+
+    snprintf(playtime_bin_path, 128, "ux0:/data/TrackPlug/%s.bin", titleid);
+    tick_start = sceKernelGetProcessTimeWide();
+
+    SceUID fd = sceIoOpen(playtime_bin_path, SCE_O_RDONLY, 0777);
+    if (fd < 0) {
+        playtime_start = 0;
+        is_playtime_loaded = 1;
+        return;
+    }
+
+    sceIoRead(fd, &playtime_start, sizeof(uint64_t));
+    sceIoClose(fd);
+
+    is_playtime_loaded = 1;
 }
 
-int get_pspemu_title() {
-	void *adrenaline = (void *)ScePspemuConvertAddress(ADRENALINE_ADDRESS, 0x1/*KERMIT_INPUT_MODE*/, ADRENALINE_SIZE);
-	if (adrenaline <= 0)
-		return 0;
+static void write_playtime(uint64_t playtime) {
 
-	char *title = adrenaline + 0x18;
+    SceUID fd = sceIoOpen(playtime_bin_path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+    if (fd < 0) {
+        return;
+    }
 
-	if (title[0] == 0 || strncmp(title, "XMB", 3) == 0)
-		return 0;
-
-	// Game changed?
-	if (strcmp(full_title, title) != 0) {
-		playtime_loaded = 0;
-	}
-
-	strcpy(full_title, title);
-
-	titleid[0] = 'P';
-	titleid[1] = 'S';
-	titleid[2] = 'P';
-	titleid[3] = '_';
-	int j = 4, i = 0;
-
-	while (j < sizeof(titleid) - 1 && title[i] != 0) {
-		if ((title[i] >= 'A' && title[i] <= 'Z') ||
-			(title[i] >= 'a' && title[i] <= 'z') ||
-			(title[i] >= '0' && title[i] <= '9')) {
-			titleid[j++] = title[i];
-		}
-		i++;
-	}
-
-	// Pad to min 9 chars, prevent app crashes
-	while (j < 9) {
-		titleid[j++] = 'x';
-	}
-
-	titleid[j] = 0;
-
-	return 1;
+    sceIoWrite(fd, &playtime, sizeof(uint64_t));
+    sceIoClose(fd);
 }
 
-void write_pspemu_title() {
-	char buffer[128];
-	snprintf(buffer, sizeof(buffer), "[PSP] ");
-	int i = 0, j = 6;
-	while (j < sizeof(buffer) && full_title[i] != 0) {
-		// Strip invalid chars
-		if (full_title[i] >= 32 && full_title[i] <= 126) {
-			buffer[j++] = full_title[i];
-		}
-		i++;
-	}
-	buffer[j++] = 0;
+void write_title(const char *titleid, const char *title) {
 
-	SceUID fd;
-	sprintf(fname_title, "ux0:/data/TrackPlugArchive/%s.txt", titleid);
-	kuIoOpen(fname_title, SCE_O_RDONLY, &fd);
-	if (fd < 0){
-		kuIoOpen(fname_title, SCE_O_WRONLY|SCE_O_CREAT, &fd);
-		if (fd >= 0) {
-			kuIoWrite(fd, buffer, strlen(buffer));
-			kuIoClose(fd);
-		}
-	}
+    char path[128];
+    snprintf(path, 128, "ux0:/data/TrackPlugArchive/%s.txt", titleid);
+
+    // Check if already exists
+    SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0777);
+    if (fd >= 0) {
+        sceIoClose(fd);
+        return;
+    }
+
+    fd = sceIoOpen(path, SCE_O_WRONLY | SCE_O_CREAT, 0777);
+    if (fd < 0) {
+        return;
+    }
+
+    sceIoWrite(fd, title, strlen(title));
+    sceIoClose(fd);
 }
 
-int sceDisplaySetFrameBuf_patched(const SceDisplayFrameBuf *pParam, int sync) {
+static int check_adrenaline() {
+    void *SceAdrenaline = (void *)0x73CDE000;
 
-	uint64_t t_tick = sceKernelGetProcessTimeWide();
+    char *title = SceAdrenaline + 24;
+    char *titleid = SceAdrenaline + 152;
 
-	// Saving playtime every 10 seconds
-	if ((t_tick - tick) > 10000000){
-		// If in PspEmu
-		if (strcmp(real_titleid, "NPXS10028") == 0) {
-			if (get_pspemu_title()) {
-				// New game?
-				if (!playtime_loaded) {
-					load_playtime();
-					write_pspemu_title();
-				}
-			} else {
-				// No game running
-				playtime_loaded = 0;
-			}
-		}
+    if (title[0] == 0 || !strncmp(title, "XMB", 3))
+        return 0;
 
-		if (!playtime_loaded) {
-			goto exit;
-		}
+    // Game changed?
+    if (strncmp(adrenaline_titleid, titleid, 9)) {
+        is_playtime_loaded = 0;
+        strcpy(adrenaline_titleid, titleid);
 
-		tick = t_tick;
-		playtime += 10;
-		SceUID fd;
-		kuIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, &fd);
-		kuIoWrite(fd, &playtime, sizeof(uint64_t));
-		kuIoClose(fd);
-	}
+        load_playtime(titleid);
+        write_title(titleid, title);
+        return 0;
+    }
 
-exit:
-	return TAI_CONTINUE(int, ref, pParam, sync);
+    return 1;
+}
+
+int sub_810053F8_patched(int a1, int a2) {
+
+    char *pspemu_titleid = (char *)(a2 + 68);
+
+    // If using custom bubble
+    if (strncmp(pspemu_titleid, "PSPEMUCFW", 9)) {
+        is_pspemu_custom_bbl = 1;
+        load_playtime(pspemu_titleid);
+    }
+
+    is_pspemu_loaded = 1;
+
+    return TAI_CONTINUE(int, sub_810053F8_hookref, a1, a2);
+}
+
+static int tracker_thread(SceSize args, void *argp) {
+
+    while(1) {
+        uint64_t tick_now = sceKernelGetProcessTimeWide();
+
+        if (is_pspemu_loaded) {
+            // Check if XMB/game has changed
+            if (!is_pspemu_custom_bbl && !check_adrenaline()) {
+                goto CONT;
+            }
+        }
+
+        if (!is_playtime_loaded) {
+            goto CONT;
+        }
+
+        write_playtime(playtime_start + (tick_now - tick_start)/SECOND);
+
+CONT:
+        sceKernelDelayThread(SAVE_PERIOD * SECOND);
+    }
+
+    return sceKernelExitDeleteThread(0);
 }
 
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
 
-	// Getting game Title ID
-	sceAppMgrAppParamGetString(0, 12, real_titleid , 256);
+    char titleid[12];
+    sceAppMgrAppParamGetString(0, 12, titleid, 12);
 
-	// PspEmu game?
-	if (strcmp(real_titleid, "NPXS10028") == 0) {
-		// Get ScePspemu tai module info
-		tai_module_info_t ScePspemu_tai_info;
-		ScePspemu_tai_info.size = sizeof(tai_module_info_t);
-		taiGetModuleInfo("ScePspemu", &ScePspemu_tai_info);
+    if (!strncmp(titleid, "NPXS10028", 9)) {
 
-		// Module info
-		SceKernelModuleInfo ScePspemu_mod_info;
-		ScePspemu_mod_info.size = sizeof(SceKernelModuleInfo);
-		sceKernelGetModuleInfo(ScePspemu_tai_info.modid, &ScePspemu_mod_info);
+        tai_module_info_t tai_info;
+        tai_info.size = sizeof(tai_module_info_t);
+        taiGetModuleInfo("ScePspemu", &tai_info);
 
-		// Addresses
-		uint32_t text_addr = (uint32_t)ScePspemu_mod_info.segments[0].vaddr;
-		ScePspemuConvertAddress = (void *)(text_addr + 0x6364 + 0x1);
-	} else {
-		strcpy(titleid, real_titleid);
-		load_playtime();
-	}
+        sub_810053F8_hookid = taiHookFunctionOffset(
+                &sub_810053F8_hookref,
+                tai_info.modid,
+                0, 0x53F8, 1,
+                sub_810053F8_patched);
 
-	// Getting starting tick
-	tick = sceKernelGetProcessTimeWide();
+    } else {
 
-	hook = taiHookFunctionImport(&ref,
-				     TAI_MAIN_MODULE,
-				     TAI_ANY_LIBRARY,
-				     0x7A410B64,
-				     sceDisplaySetFrameBuf_patched);
+        load_playtime(titleid);
+    }
 
-	return SCE_KERNEL_START_SUCCESS;
+    SceUID tracker_thread_id = sceKernelCreateThread("TrackPlugX", tracker_thread, 0x10000100, 0x10000, 0, 0, NULL);
+    if (tracker_thread_id >= 0)
+        sceKernelStartThread(tracker_thread_id, 0, NULL);
+
+    return SCE_KERNEL_START_SUCCESS;
 }
 
 int module_stop(SceSize argc, const void *args) {
-	return SCE_KERNEL_STOP_SUCCESS;
+
+    if (sub_810053F8_hookid >= 0) {
+        taiHookRelease(sub_810053F8_hookid, sub_810053F8_hookref);
+    }
+
+    return SCE_KERNEL_STOP_SUCCESS;
 }

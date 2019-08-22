@@ -14,6 +14,7 @@ static char adrenaline_titleid[12];
 
 static uint8_t is_pspemu_loaded = 0;
 static uint8_t is_pspemu_custom_bbl = 0;
+static uint8_t is_pspemu_title_written = 0;
 static uint8_t is_playtime_loaded = 0;
 
 static char playtime_bin_path[128];
@@ -23,6 +24,7 @@ static uint64_t tick_start = 0;
 static void load_playtime(const char *titleid) {
     snprintf(playtime_bin_path, 128, "ux0:/data/TrackPlug/%s.bin", titleid);
     tick_start = sceKernelGetProcessTimeWide();
+    is_pspemu_title_written = 0;
 
     SceUID fd = sceIoOpen(playtime_bin_path, SCE_O_RDONLY, 0777);
     if (fd < 0) {
@@ -54,6 +56,7 @@ static void write_playtime() {
 void write_title(const char *titleid, const char *title) {
     char path[128];
     snprintf(path, 128, "ux0:/data/TrackPlugArchive/%s.txt", titleid);
+    is_pspemu_title_written = 1;
 
     // Check if already exists
     SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0777);
@@ -80,8 +83,12 @@ static int check_adrenaline() {
     if (title[0] == 0 || !strncmp(title, "XMB", 3))
         return 0;
 
-    // Game changed?
-    if (strncmp(adrenaline_titleid, titleid, 9)) {
+    // Write custom bubble Title
+    if (is_pspemu_custom_bbl && !is_pspemu_title_written)
+        write_title(adrenaline_titleid, title);
+
+    // XMB game changed?
+    if (!is_pspemu_custom_bbl && strncmp(adrenaline_titleid, titleid, 9)) {
         if (is_playtime_loaded)
             write_playtime(); // Save closed game
 
@@ -102,6 +109,8 @@ int sub_810053F8_patched(int a1, int a2) {
     // If using custom bubble
     if (strncmp(pspemu_titleid, "PSPEMUCFW", 9)) {
         is_pspemu_custom_bbl = 1;
+        strcpy(adrenaline_titleid, pspemu_titleid);
+
         load_playtime(pspemu_titleid);
     }
 
@@ -113,8 +122,9 @@ int sub_810053F8_patched(int a1, int a2) {
 static int tracker_thread(SceSize args, void *argp) {
     while (1) {
         if (is_pspemu_loaded) {
-            // Check if XMB/game has changed
-            if (!is_pspemu_custom_bbl && !check_adrenaline()) {
+            // Check if XMB/game has changed, write Title if necessary
+            int ret = check_adrenaline();
+            if (!is_pspemu_custom_bbl && !ret) {
                 goto CONT;
             }
         }

@@ -52,6 +52,69 @@ function extractTitle(file, tid)
 	return data.title
 end
 
+function getRegion(titleid)
+	local regioncode = string.sub(titleid,1,4)
+	local prefix = string.sub(regioncode,1,2)
+	local region = "Unknown"
+
+	-- PSV common
+	if regioncode == "PCSA" or regioncode == "PCSE" then
+		region = "USA"
+	elseif regioncode == "PCSB" or regioncode == "PCSF" then
+		region = "Europe"
+	elseif regioncode == "PCSC" or regioncode == "PCSG" then
+		region = "Japan"
+	elseif regioncode == "PCSD" or regioncode == "PCSH" then
+		region = "Asia"
+	-- Physical & NP releases (PSV/PSP/PS1)
+	elseif prefix == "VC" or prefix == "VL" or
+			prefix == "UC" or prefix == "UL" or
+			prefix == "SC" or prefix == "SL" or
+			prefix == "NP" then
+		n1 = string.sub(regioncode,1,1)
+		n3 = string.sub(regioncode,3,3)
+		n4 = string.sub(regioncode,4,4)
+		if n3 == "A" then
+			region = "Asia"
+		elseif n3 == "C" then
+			region = "China"
+		elseif n3 == "E" then
+			region = "Europe"
+		elseif n3 == "H" then
+			region = "Hong Kong"
+		elseif n3 == "J" or n3 == "P" then
+			region = "Japan"
+		elseif n3 == "K" then
+			region = "Korea"
+		elseif n3 == "U" then
+			region = "USA"
+		end
+
+		if n1 == "S" then
+			region = region .. " (PS1)"
+		elseif n1 == "U" or
+				(prefix == "NP" and (n4 == "G" or n4 == "H")) then
+			region = region .. " (PSP)"
+		elseif prefix == "NP" then
+			if n4 == "E" or n4 == "F" then
+				region = region .. " (PS1 - PAL)"
+			elseif n4 == "I" or n4 == "J" then
+				region = region .. " (PS1 - NTSC)"
+			end
+		end
+	elseif prefix == "PE" then
+		region = "Europe (PS1)"
+	elseif prefix == "PT" then
+		region = "Asia (PS1)"
+	elseif prefix == "PU" then
+		region = "USA (PS1)"
+	elseif string.sub(file.name,1,6) == "PSPEMU" then
+		region = "PSP/PS1"
+	end
+
+	return region
+end
+
 -- Loading unknown icon
 local unk = Graphics.loadImage("app0:/unk.png")
 		
@@ -62,20 +125,8 @@ for i, file in pairs(tbl) do
 		cfg_idx = i
 	else
 		local titleid = string.sub(file.name,1,-5)
-		local regioncode = string.sub(file.name,1,4)
-		if regioncode == "PCSA" or regioncode == "PCSE" then
-			file.region = "US"
-		elseif regioncode == "PCSB" or regioncode == "PCSF" then
-			file.region = "EU"
-		elseif regioncode == "PCSC" or regioncode == "PCSG" then
-			file.region = "JP"
-		elseif regioncode == "PCSD" or regioncode == "PCSH" then
-			file.region = "ASIA"
-		elseif string.sub(file.name,1,6) == "PSPEMU" then
-			file.region = "PSP/PSX"
-		else
-			file.region = "UNK"
-		end
+		file.region = getRegion(titleid)
+
 		if System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
 			file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
 		else

@@ -37,7 +37,10 @@ static void load_playtime(const char *titleid) {
     is_playtime_loaded = 1;
 }
 
-static void write_playtime(uint64_t playtime) {
+static void write_playtime() {
+    uint32_t playtime = playtime_start +
+                (sceKernelGetProcessTimeWide() - tick_start) / SECOND;
+
     SceUID fd = sceIoOpen(playtime_bin_path,
             SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
     if (fd < 0) {
@@ -79,6 +82,9 @@ static int check_adrenaline() {
 
     // Game changed?
     if (strncmp(adrenaline_titleid, titleid, 9)) {
+        if (is_playtime_loaded)
+            write_playtime(); // Save closed game
+
         is_playtime_loaded = 0;
         strcpy(adrenaline_titleid, titleid);
 
@@ -113,12 +119,9 @@ static int tracker_thread(SceSize args, void *argp) {
             }
         }
 
-        if (!is_playtime_loaded) {
-            goto CONT;
+        if (is_playtime_loaded) {
+            write_playtime();
         }
-
-        write_playtime(playtime_start +
-                (sceKernelGetProcessTimeWide() - tick_start)/SECOND);
 
 CONT:
         sceKernelDelayThread(SAVE_PERIOD * SECOND);

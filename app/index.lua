@@ -4,6 +4,16 @@ System.createDirectory("ux0:/data/TrackPlugArchive")
 
 -- Scanning TrackPlug folder
 local tbl = System.listDirectory("ux0:/data/TrackPlug")
+
+for i, file in pairs(tbl) do
+	local regcod = string.sub(file.name,1,4)
+	if regcod ~= "PCSA" and regcod ~= "PCSE" and regcod ~= "PCSB" and regcod ~= "PCSF" and regcod ~= "PCSG" and regcod ~= "PCSH" then
+		System.deleteFile("ux0:/data/TrackPlug/"..file.name)
+	end
+end
+
+tbl = System.listDirectory("ux0:/data/TrackPlug")
+
 if tbl == nil then
 	tbl = {}
 end
@@ -86,7 +96,7 @@ for i, file in pairs(tbl) do
 		elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
 			file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)
 		else
-			file.title = "Unknown Title"
+				file.title = "Unknown Title"
 		end
 		file.id = titleid
 		fd = System.openFile("ux0:/data/TrackPlug/" .. file.name, FREAD)
@@ -101,113 +111,46 @@ end
 
 -- Background wave effect
 local colors = {
-	{Color.new(0,132,255), Color.new(72,185,255), Color.new(0,132,255)},  -- Cyan
-	{Color.new(255,132,0), Color.new(255,185,72), Color.new(255,132,0)},  -- Orange
-	{Color.new(255,72,72), Color.new(255,132,132), Color.new(255,72,72)}, -- Pink
-	{Color.new(255,0,0), Color.new(255,72,72), Color.new(255,0,0)}, 	  -- Red
-	{Color.new(255,72,255), Color.new(255,185,255), Color.new(255,72,255)},	-- Magenta
-	{Color.new(72,72,72), Color.new(0,0,0), Color.new(0,255,0)}	-- Black'N'Green
+	{Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)}	-- Black'N'Rose
 }
 if col_idx == nil then
-	col_idx = 6
+	col_idx = 0
 end
-local function LoadWave(height,dim,f,style,x_dim)	
-	if style == 1 then
-		f=f or 0.1
-		local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
-		function onda:color(a,b,c) self.a=a self.b=b self.c=c end
-		function onda:init(desfase)
-			desfase=desfase or 0
-			if not self.contador then
-				self.contador=Timer.new()
+
+local function LoadWave(height,dim,f,style,x_dim)
+        if style == 1 then
+                f=f or 0.1
+                local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
+                function onda:color(a,b,c) self.a=a self.b=b self.c=c end
+                function onda:init(desfase)
+                        desfase=desfase or 0
+                        if not self.contador then
+                                self.contador=Timer.new()
+                        end
+                        if not self.a or not self.b or not self.c then
+                                self.a = 255
+                                self.b = 170
+                                self.c = 220
+                        end
+                        local t,x,y,i
+                        t = Timer.getTime(self.contador)/1000+desfase
+                        for x = 0,x_dim,8 do
+				y = 404+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
+                                i = self.Amplitud*(self.pi/self.Long_onda)*math.cos(2*self.pi*(t*self.Frec-x/self.Long_onda))
+				k = self.Amplitud*(1*self.pi/self.Long_onda)*math.sin(-1*self.pi*(t*self.Frec-x/self.Long_onda))
+                                Graphics.drawLine(x-30,x+30,y-i*30,y+i*30,Color.new(255,200,220,math.floor(x/65)))
+				--Graphics.drawLine(x-100,x+100,y+i*100,y-i*100,Color.new(200,120,180,math.floor(x/30)))
+				Graphics.drawLine(x-150,x+150,y-k*150,y+k*150,Color.new(140,110,170,math.floor(x/20)))
 			end
-			if not self.a or not self.b or not self.c then
-				self.a = 0
-				self.b = 0
-				self.c = 255
-			end
-			local t,x,y,i
-			t = Timer.getTime(self.contador)/1000+desfase
-			for x = 0,x_dim,4 do
-				y = 252+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				i = self.Amplitud*(-2*self.pi/self.Long_onda)*math.cos(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				Graphics.drawLine(x-200,x+200,y-i*200,y+i*200,Color.new(self.a,self.b,self.c,math.floor(x/40)))
-			end
-			collectgarbage()
-		end
-		function onda:destroy()
-			Timer.destroy(self.contador)
-		end
-		return onda
-	end
-	if style == 2 then
-		f=f or 0.1
-		local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
-		function onda:color(a,b,c) self.a=a self.b=b self.c=c end
-		function onda:init(desfase)
-			desfase=desfase or 0
-			if not self.contador then
-				self.contador=Timer.new()
-			end
-			if not self.a or not self.b or not self.c then
-				self.a = 0
-				self.b = 0
-				self.c = 255
-			end
-			local t,x,y,i,a
-			t = Timer.getTime(self.contador)/1000+desfase
-			if self.Amplitud <= 5 then
-				self.aumento = true
-			elseif self.Amplitud >= 110 then
-				self.aumento = false
-			end
-			if self.aumento then
-				self.Amplitud = self.Amplitud+0.1
-			else
-				self.Amplitud = self.Amplitud-0.1
-			end
-			for x = 0,x_dim,10 do
-				y = 272+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				i = self.Amplitud*(-2*self.pi/self.Long_onda)*math.cos(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				for a = -3,3 do
-					Graphics.drawLine(x-20,x+20,a+y-i*20,a+y+i*20,Color.new(self.a,self.b,self.c,25-math.abs(a*5)))
-				end
-			end
-			collectgarbage()
-		end
-		function onda:destroy()
-			Timer.destroy(self.contador)
-		end
-		return onda
-	end
-	if style == 3 then
-		f=f or 0.1
-		local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
-		function onda:color(a,b,c) self.Color=Color.new(a,b,c,40) end
-		function onda:init(desfase)
-			desfase=desfase or 0
-			if not self.contador then
-				self.contador=Timer.new()
-			end
-			if not self.Color then
-				self.Color=Color.new(0,0,255,40)
-			end
-			local t,x,y,i
-			t = Timer.getTime(self.contador)/1000+desfase
-			for x = 0,x_dim do
-				y = 252+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				Graphics.drawLine(x,x,y,240,self.Color)
-			end
-			collectgarbage()
-		end
-		function onda:destroy()
-			Timer.destroy(self.contador)
-		end
-		return onda
-	end
+                end
+                function onda:destroy()
+                        Timer.destroy(self.contador)
+                end
+                return onda
+        end
 end
-wav = LoadWave(15,1160, 0.1, 2, 960)
-wav:color(Color.getR(colors[col_idx][3]),Color.getG(colors[col_idx][3]),Color.getB(colors[col_idx][3]))
+
+wav = LoadWave(100,1160, 0.1, 1, 1160)
 
 -- Internal stuffs
 local list_idx = 1
@@ -218,8 +161,8 @@ local orders = {"Name", "Playtime"}
 table.sort(tbl, function (a, b) return (a.title:lower() < b.title:lower() ) end)
 function resortList(o_type, m_idx)
 	local old_id = tbl[m_idx].id
-	if o_type == 1 then -- Name
-		table.sort(tbl, function (a, b) return (a.title:lower() < b.title:lower() ) end)
+	if o_type == 1 then -- Playtime
+		table.sort(tbl, function (a, b) return (a.rtime > b.rtime ) end)
 	elseif o_type == 2 then -- Playtime
 		table.sort(tbl, function (a, b) return (a.rtime > b.rtime ) end)
 	end
@@ -298,7 +241,7 @@ function RenderList()
 	end
 	local sclr = Color.new(sel_val, sel_val, sel_val, 100)
 	Graphics.fillRect(0, 960, 4, 140, sclr)
-	Graphics.debugPrint(800, 520, "Order: " .. orders[order_idx], white)
+	--Graphics.debugPrint(800, 520, "Order: " .. orders[order_idx], white)
 	if mov_y ~= 0 then
 		mov_y = mov_y + mov_step
 		if math.abs(mov_y) >= 132 then
@@ -338,12 +281,9 @@ local f_idx = 1
 local oldpad = Controls.read()
 while #tbl > 0 do
 	Graphics.initBlend()
-	Graphics.fillRect(0,960,0,544,colors[col_idx][2])
+	Graphics.fillRect(0,960,0,544,Color.new(10,5,15))
 	wav:init()
 	RenderList()
-	if freeze then
-		showAlarm("Do you want to delete this record permanently?", f_idx)
-	end
 	Graphics.termBlend()
 	Screen.flip()
 	Screen.waitVblankStart()
@@ -357,7 +297,7 @@ while #tbl > 0 do
 				new_list_idx = #tbl
 			end
 			mov_y = 1
-			mov_step = 22
+			mov_step = 11
 		end
 	elseif Controls.check(pad, SCE_CTRL_DOWN) and mov_y == 0 then
 		if freeze then
@@ -368,41 +308,8 @@ while #tbl > 0 do
 				new_list_idx = 1
 			end
 			mov_y = -1
-			mov_step = -22
+			mov_step = -11
 		end
-	elseif Controls.check(pad, SCE_CTRL_LTRIGGER) and not Controls.check(oldpad, SCE_CTRL_LTRIGGER) and not freeze then
-		order_idx = order_idx - 1
-		if order_idx == 0 then
-			order_idx = #orders
-		end
-		list_idx = resortList(order_idx, list_idx)
-	elseif Controls.check(pad, SCE_CTRL_RTRIGGER) and not Controls.check(oldpad, SCE_CTRL_RTRIGGER) and not freeze then
-		order_idx = order_idx + 1
-		if order_idx > #orders then
-			order_idx = 1
-		end
-		list_idx = resortList(order_idx, list_idx)
-	elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) and not freeze then
-		freeze = true
-		f_idx = 1
-	elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
-		freeze = false
-		if f_idx == 1 then -- Delete
-			System.deleteFile("ux0:/data/TrackPlug/" .. tbl[list_idx].name)
-			table.remove(tbl, list_idx)
-			if list_idx > #tbl then
-				list_idx = list_idx - 1
-			end
-		end
-	elseif Controls.check(pad, SCE_CTRL_SELECT) and not Controls.check(oldpad, SCE_CTRL_SELECT) then
-		col_idx = col_idx + 1
-		if col_idx > #colors then
-			col_idx = 1
-		end
-		wav:color(Color.getR(colors[col_idx][3]),Color.getG(colors[col_idx][3]),Color.getB(colors[col_idx][3]))
-		fd = System.openFile("ux0:/data/TrackPlug/config.lua", FCREATE)
-		System.writeFile(fd, "col_idx="..col_idx, 9)
-		System.closeFile(fd)
 	end
 	oldpad = pad
 end

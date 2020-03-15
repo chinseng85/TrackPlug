@@ -4,16 +4,19 @@ System.createDirectory("ux0:/data/TrackPlugArchive")
 
 -- Scanning TrackPlug folder
 local tbl = System.listDirectory("ux0:/data/TrackPlug")
--- Removing apps with no region, may also add livetweet, crunchyroll etc.
+local blacklist = {
+    "VITASHELL", -- Vitashell
+    "TPLG00001", -- TrackPlug
+    "NPXS10028" -- PSPEMU app itself
+}
+-- Removing blacklisted games
 for i, file in pairs(tbl) do
-	local regcod = string.sub(file.name,1,4)
 	local titleid = string.sub(file.name,1,-5)
-	-- DOA 5 Plus breaks the tracker
-	if titleid == "PCSE00235" then
-		System.deleteFile("ux0:/data/TrackPlug/"..file.name)
-	elseif regcod ~= "PCSA" and regcod ~= "PCSE" and regcod ~= "PCSB" and regcod ~= "PCSF" and regcod ~= "PCSG" and regcod ~= "PCSH" then
-		System.deleteFile("ux0:/data/TrackPlug/"..file.name)
-	end
+    for k, toberemoved in pairs(blacklist) do
+	    if titleid == blacklist[k] then
+            System.deleteFile("ux0:/data/TrackPlug/"..file.name)
+        end
+    end
 end
 -- Reset the table
 tbl = System.listDirectory("ux0:/data/TrackPlug")
@@ -122,7 +125,7 @@ function getRegion(titleid)
         region = "Asia (PS1)"
     elseif prefix == "PU" then
         region = "USA (PS1)"
-    elseif string.sub(file.name,1,6) == "PSPEMU" then
+    elseif string.sub(titleid,1,6) == "PSPEMU" then
         region = "PSP/PS1"
     end
 
@@ -151,7 +154,7 @@ for i, file in pairs(tbl) do
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)
         else
-            file.title = "Unknown Title"
+            file.title = "Unknown - " .. titleid
         end
         file.id = titleid
         fd = System.openFile("ux0:/data/TrackPlug/" .. file.name, FREAD)
@@ -159,9 +162,6 @@ for i, file in pairs(tbl) do
         file.ptime = FormatTime(file.rtime)
         System.closeFile(fd)
     end
-end
-if cfg_idx ~= nil then
-    table.remove(tbl, cfg_idx)
 end
 
 -- Background wave effect

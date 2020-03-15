@@ -8,7 +8,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(TrackPlug)
+project(TrackPlugX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99")
@@ -25,26 +25,25 @@ if (NOT ${RELEASE})
   add_definitions(-DENABLE_LOGGING)
 endif()
 
-add_executable(TrackPlug
+add_executable(${PROJECT_NAME}
   main.c
 )
 
-target_link_libraries(TrackPlug
+target_link_libraries(${PROJECT_NAME}
+  gcc
   taihen_stub
-  SceAppUtil_stub
   SceAppMgr_stub
   SceLibKernel_stub
-  SceDisplay_stub
-  k
-  gcc
-  ScePower_stub
-  kuio_stub
+  SceIofilemgr_stub
+  SceLibc_stub
+  SceKernelModulemgr_stub
+  SceKernelThreadMgr_stub
 )
 
-set_target_properties(TrackPlug
+set_target_properties(${PROJECT_NAME}
   PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
-vita_create_self(TrackPlug.suprx TrackPlug
-  CONFIG ${CMAKE_SOURCE_DIR}/TrackPlug.yml
+vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
+  CONFIG ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.yml
 )

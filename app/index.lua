@@ -7,7 +7,11 @@ local tbl = System.listDirectory("ux0:/data/TrackPlug")
 -- Removing apps with no region, may also add livetweet, crunchyroll etc.
 for i, file in pairs(tbl) do
 	local regcod = string.sub(file.name,1,4)
-	if regcod ~= "PCSA" and regcod ~= "PCSE" and regcod ~= "PCSB" and regcod ~= "PCSF" and regcod ~= "PCSG" and regcod ~= "PCSH" then
+	local titleid = string.sub(file.name,1,-5)
+	-- DOA 5 Plus breaks the tracker
+	if titleid == "PCSE00235" then
+		System.deleteFile("ux0:/data/TrackPlug/"..file.name)
+	elseif regcod ~= "PCSA" and regcod ~= "PCSE" and regcod ~= "PCSB" and regcod ~= "PCSF" and regcod ~= "PCSG" and regcod ~= "PCSH" then
 		System.deleteFile("ux0:/data/TrackPlug/"..file.name)
 	end
 end
@@ -118,34 +122,33 @@ if col_idx == nil then
 end
 
 local function LoadWave(height,dim,f,x_dim)
-        f=f or 0.1
-        local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
-        function onda:color(a,b,c) self.a=a self.b=b self.c=c end
-        function onda:init(desfase)
-            desfase=desfase or 0
-            if not self.contador then
-                self.contador=Timer.new()
-            end
-            if not self.a or not self.b or not self.c then
-                self.a = 255
-                self.b = 200
-                self.c = 220
-            end
-            local t,x,y,i
-            t = Timer.getTime(self.contador)/1000+desfase
-            for x = 0,x_dim,8 do
-				y = 404+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
-                i = self.Amplitud*(self.pi/self.Long_onda)*math.cos(2*self.pi*(t*self.Frec-x/self.Long_onda))
-				k = self.Amplitud*(1*self.pi/self.Long_onda)*math.sin(-1*self.pi*(t*self.Frec-x/self.Long_onda))
-                Graphics.drawLine(x-30,x+30,y-i*30,y+i*30,Color.new(self.a,self.b,self.c,math.floor(x/65)))
-				Graphics.drawLine(x-150,x+150,y-k*150,y+k*150,Color.new(self.a-60,self.b-80,self.a-70,math.floor(x/20)))
-			end
+    f=f or 0.1
+    local onda={pi=math.pi,Frec=f,Long_onda=dim,Amplitud=height}
+    function onda:color(a,b,c) self.a=a self.b=b self.c=c end
+    function onda:init(desfase)
+        desfase=desfase or 0
+        if not self.contador then
+            self.contador=Timer.new()
         end
-        function onda:destroy()
-            Timer.destroy(self.contador)
+        if not self.a or not self.b or not self.c then
+            self.a = 255
+            self.b = 200
+            self.c = 220
         end
-        return onda
+        local t,x,y,i
+        t = Timer.getTime(self.contador)/1000+desfase
+        for x = 0,x_dim,8 do
+			y = 404+self.Amplitud*math.sin(2*self.pi*(t*self.Frec-x/self.Long_onda))
+            i = self.Amplitud*(self.pi/self.Long_onda)*math.cos(2*self.pi*(t*self.Frec-x/self.Long_onda))
+			k = self.Amplitud*(1*self.pi/self.Long_onda)*math.sin(-1*self.pi*(t*self.Frec-x/self.Long_onda))
+            Graphics.drawLine(x-30,x+30,y-i*30,y+i*30,Color.new(self.a,self.b,self.c,math.floor(x/65)))
+			Graphics.drawLine(x-150,x+150,y-k*150,y+k*150,Color.new(self.a-60,self.b-80,self.a-70,math.floor(x/20)))
+		end
     end
+    function onda:destroy()
+        Timer.destroy(self.contador)
+    end
+    return onda
 end
 
 wav = LoadWave(100,1160, 0.1, 1160)
@@ -173,7 +176,6 @@ local yellow = Color.new(255, 255, 0)
 local grey = Color.new(40, 40, 40)
 
 -- Shows an alarm with selection on screen
---[[
 local alarm_val = 128
 local alarm_decrease = true
 function showAlarm(title, select_idx)
@@ -195,7 +197,6 @@ function showAlarm(title, select_idx)
 	Graphics.debugPrint(205, 235, "Yes", white)
 	Graphics.debugPrint(205, 255, "No", white)
 end
-]]--
 -- Scroll-list Renderer
 local sel_val = 128
 local decrease = true
@@ -234,11 +235,8 @@ function RenderList()
 			end
 		end
 	end
-	local sclr = Color.new(sel_val, sel_val, sel_val, 100)
-	Graphics.fillRect(0, 960, 4, 140, sclr)
-	--Graphics.debugPrint(800, 520, "Order: " .. orders[order_idx], white)
 	if mov_y ~= 0 then
-		mov_y = mov_y + mov_step
+		mov_y = math.floor(mov_y*1.2)
 		if math.abs(mov_y) >= 132 then
 			mov_y = 0
 			list_idx = new_list_idx
@@ -250,18 +248,19 @@ function RenderList()
 			real_i = i
 			i = #big_tbl - math.abs(i)
 		end
-		if i ~= list_idx + 4 then
+		Graphics.fillRect(5, 955, y+mov_y, y+mov_y-4, Color.new(255, 255, 255, 60))
+		if i ~= list_idx + 5 then
 			Graphics.drawImage(5, y + mov_y, big_tbl[i].icon)
 		end
-		Graphics.debugPrint(150, y + 25 + mov_y, big_tbl[i].title, yellow)
-		Graphics.debugPrint(150, y + 45 + mov_y, "Title ID: " .. big_tbl[i].id, white)
-		Graphics.debugPrint(150, y + 65 + mov_y, "Region: " .. big_tbl[i].region, white)
-		Graphics.debugPrint(150, y + 85 + mov_y, "Playtime: " .. big_tbl[i].ptime, white)
+		Graphics.debugPrint(150, y + 35 + mov_y, big_tbl[i].title, Color.new(230,140,175))
+		--Graphics.debugPrint(150, y + 45 + mov_y, "Title ID: " .. big_tbl[i].id, white)
+		--Graphics.debugPrint(150, y + 65 + mov_y, "Region: " .. big_tbl[i].region, white)
+		Graphics.debugPrint(150, y + 65 + mov_y, "Playtime: " .. big_tbl[i].ptime, white)
 		local r_idx = i % #tbl
 		if r_idx == 0 then
 			r_idx = #tbl
 		end
-		Graphics.debugPrint(900, y + 85 + mov_y, "#" .. r_idx, white)
+		Graphics.debugPrint(920, y + 100 + mov_y, "#" .. r_idx, white)
 		y = y + 132
 		if real_i <= 0 then
 			i = real_i
@@ -279,6 +278,9 @@ while #tbl > 0 do
 	Graphics.fillRect(0,960,0,544,Color.new(10,5,15))
 	wav:init()
 	RenderList()
+	if freeze then
+		showAlarm("Do you want to delete this record permanently?", f_idx)
+	end
 	Graphics.termBlend()
 	Screen.flip()
 	Screen.waitVblankStart()
@@ -291,8 +293,7 @@ while #tbl > 0 do
 			if new_list_idx == 0 then
 				new_list_idx = #tbl
 			end
-			mov_y = 1
-			mov_step = 11
+			mov_y = 5
 		end
 	elseif Controls.check(pad, SCE_CTRL_DOWN) and mov_y == 0 then
 		if freeze then
@@ -302,8 +303,18 @@ while #tbl > 0 do
 			if new_list_idx > #tbl then
 				new_list_idx = 1
 			end
-			mov_y = -1
-			mov_step = -11
+			mov_y = -5
+		end
+	elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) and not freeze then
+		freeze = true
+		f_idx = 1
+	elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
+		freeze = false
+		if f_idx == 1 then -- Delete
+			System.deleteFile("ux0:/data/TrackPlug/" .. tbl[list_idx].name)
+			table.remove(tbl, list_idx)
+			big_tbl = {}
+			list_idx = list_idx - 1
 		end
 	end
 	oldpad = pad

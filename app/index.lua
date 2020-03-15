@@ -5,9 +5,10 @@ System.createDirectory("ux0:/data/TrackPlugArchive")
 -- Scanning TrackPlug folder
 local tbl = System.listDirectory("ux0:/data/TrackPlug")
 local blacklist = {
-    "VITASHELL", -- Vitashell
-    "TPLG00001", -- TrackPlug
-    "NPXS10028" -- PSPEMU app itself
+    --"VITASHELL", -- Vitashell
+    --"TPLG00001", -- TrackPlug
+    "NPXS10028", -- PSPEMU app itself
+    "NPXS10083"
 }
 -- Removing blacklisted games
 for i, file in pairs(tbl) do
@@ -210,16 +211,7 @@ local order_idx = 1
 local orders = {"Name", "Playtime"}
 
 -- Ordering titles
-table.sort(tbl, function (a, b) return (a.title:lower() < b.title:lower() ) end)
-function resortList(o_type, m_idx)
-	local old_id = tbl[m_idx].id
-	table.sort(tbl, function (a, b) return (a.rtime > b.rtime ) end)
-	for i, title in pairs(tbl) do
-		if title.id == old_id then
-			return i
-		end
-	end
-end
+table.sort(tbl, function (a, b) return (a.rtime > b.rtime ) end)
 
 -- Internal stuffs
 local white = Color.new(255, 255, 255)
@@ -286,12 +278,13 @@ function RenderList()
 			end
 		end
 	end
-	if mov_y ~= 0 then
-		mov_y = math.floor(mov_y*1.2)
-		if math.abs(mov_y) >= 132 then
+    if mov_y ~= 0 then
+        if math.abs(mov_y) < 104 then
+		    mov_y = math.floor(mov_y*1.298)
+        else
 			mov_y = 0
-			list_idx = new_list_idx
-			i = new_list_idx - 1
+		    list_idx = new_list_idx
+            i = new_list_idx - 1
 		end
 	end
 	while i <= list_idx + 4 do
@@ -323,6 +316,7 @@ end
 
 -- Main loop
 local f_idx = 1
+local useless = 0
 local oldpad = Controls.read()
 while #tbl > 0 do
 	Graphics.initBlend()
@@ -335,7 +329,7 @@ while #tbl > 0 do
 	Graphics.termBlend()
 	Screen.flip()
 	Screen.waitVblankStart()
-	local pad = Controls.read()
+    local pad = Controls.read()
 	if Controls.check(pad, SCE_CTRL_UP) and mov_y == 0 then
 		if freeze then
 			f_idx = 1
@@ -344,7 +338,7 @@ while #tbl > 0 do
 			if new_list_idx == 0 then
 				new_list_idx = #tbl
 			end
-			mov_y = 5
+			mov_y = 11
 		end
 	elseif Controls.check(pad, SCE_CTRL_DOWN) and mov_y == 0 then
 		if freeze then
@@ -354,7 +348,7 @@ while #tbl > 0 do
 			if new_list_idx > #tbl then
 				new_list_idx = 1
 			end
-			mov_y = -5
+			mov_y = -11
 		end
 	elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) and not freeze then
 		freeze = true
@@ -366,7 +360,7 @@ while #tbl > 0 do
 			table.remove(tbl, list_idx)
 			big_tbl = {}
 			list_idx = list_idx - 1
-		end
+        end
 	end
 	oldpad = pad
 end

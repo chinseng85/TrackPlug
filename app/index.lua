@@ -51,7 +51,7 @@ end
 
 -- Recover title from homebrew database
 function recoverTitle(tid)
-    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt", FREAD)
+    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. "/title.txt", FREAD)
     fsize = System.sizeFile(file)
     local title = System.readFile(file, fsize)
     System.closeFile(file)
@@ -61,13 +61,21 @@ end
 -- Extracts title name from an SFO file
 function extractTitle(file, tid)
     local data = System.extractSfo(file)
-    if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. tid .. ".txt") then
-        System.deleteFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt")
+    if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. tid .. "/title.txt") then
+        System.deleteFile("ux0:/data/TrackPlugArchive/" .. tid .. "/title.txt")
     end
-    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt", FCREATE)
+    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. "/title.txt", FCREATE)
     System.writeFile(file, data.title, string.len(data.title))
     System.closeFile(file)
     return data.title
+end
+
+function copyIcon(titleid)
+	newFile = System.openFile("ux0:/data/TrackPlugArchive/" .. titleid .. "/icon0.png", FCREATE)
+	oldFile = System.openFile("ur0:/appmeta/" .. titleid .. "/icon0.png", FREAD)
+	fileSize = System.sizeFile(oldFile)
+    icon = System.readFile(oldFile, fileSize)
+	System.writeFile(newFile, icon, fileSize)
 end
 
 function getRegion(titleid)
@@ -145,12 +153,18 @@ for i, file in pairs(tbl) do
         local titleid = string.sub(file.name,1,-5)
         file.region = getRegion(titleid)
 
-        if System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
+        if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. titleid .. "/icon0.png") then
+			file.icon = Graphics.loadImage("ux0:/data/TrackPlugArchive/" .. titleid .. "/icon0.png")
+		elseif System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
             file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
+			System.createDirectory("ux0:/data/TrackPlugArchive/" .. titleid .. "")
+			copyIcon(titleid)
         else
             file.icon = unk
         end
-        if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. titleid .. ".txt") then
+        
+		
+		if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. titleid .. "/title.txt") then
             file.title = recoverTitle(titleid)
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)

@@ -1,4 +1,4 @@
-![Screenshot](https://i.imgur.com/FvEEEtR.png)
+![Screenshot](https://i.imgur.com/O1G0EUq.png)
 # What is this?
 A plugin that keeps track of how long you played your games, and an app to show you the values.
 

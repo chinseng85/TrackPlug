@@ -4,6 +4,7 @@ A plugin that keeps track of how long you played your games, and an app to show 
 
 # How is this "Better"?
 - As it's rewritten as a kernel plugin, the files that record the playtime won't ever get corrupted.
+- It only writes to file when you close/launch or suspend/resume the games so it doesn't murder your memory card, unlike the old one.
 - Complete support for Adrenaline and Adrenaline Bubbles.
 - The app works at 60FPS instead of 30FPS.
 

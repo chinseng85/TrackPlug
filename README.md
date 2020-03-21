@@ -1,3 +1,4 @@
+![Screenshot](https://i.imgur.com/FvEEEtR.png)
 # What is this?
 A plugin that keeps track of how long you played your games, and an app to show you the values.
 
@@ -18,6 +19,7 @@ and install the vpk.
 - Blacklist support so you don't have to see how much time you've spent on VitaShell.
 
 # Notes
+![Bubbles](https://i.imgur.com/qZwPMXU.png)
 I would advise you to set up your bubbles in a way that their title ID's will be the same as the corresponding PSP game's title ID instead of the default PSPEMUXXX, this way, they will use the same file that stores the playtime and you won't see the game twice on the list if you launch it both from bubble or directly from adrenaline.
 
 As it's currently not possible for me to extract icons from inside Adrenaline, games launched directly from Adrenaline won't have any icons if there is no corresponding bubble for the said game. I also don't think it would be efficient even if I knew how to do it.

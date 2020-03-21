@@ -370,7 +370,7 @@ while #tbl > 0 do
 	elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
 		freeze = false
 		if f_idx == 1 then -- Delete
-			System.deleteFile("ux0:/data/TrackPlug/" .. tbl[list_idx].title)
+			System.deleteFile("ux0:/data/TrackPlug/Records/" .. tbl[list_idx].id .. ".bin")
 			table.remove(tbl, list_idx)
 			big_tbl = {}
 			list_idx = list_idx - 1

@@ -1,13 +1,13 @@
 -- Creating dirs in case they do not exist
+System.createDirectory("ux0:/data/TrackPlug/")
 System.createDirectory("ux0:/data/TrackPlug/Records")
-System.createDirectory("ux0:/data/TrackPlug/Names")
 System.createDirectory("ux0:/data/TrackPlug/Config")
 System.createDirectory("ux0:/data/TrackPlug/Assets")
 -- Scanning TrackPlug folder
 local tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
 local blacklist = {}
 -- Removing blacklisted games
-for i, file in pairs(tbl) do
+--[[for i, file in pairs(tbl) do
 	local titleid = string.sub(file.name,1,-5)
     for k, toberemoved in pairs(blacklist) do
 	    if titleid == blacklist[k] then
@@ -16,7 +16,7 @@ for i, file in pairs(tbl) do
     end
 end
 -- Reset the table
-tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
+tbl = System.listDirectory("ux0:/data/TrackPlug/Records")]]--
 
 if tbl == nil then
     tbl = {}
@@ -47,7 +47,7 @@ end
 
 -- Recover title from homebrew database
 function recoverTitle(tid)
-    local file = System.openFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt", FREAD)
+    local file = System.openFile("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt", FREAD)
     fsize = System.sizeFile(file)
     local title = System.readFile(file, fsize)
     System.closeFile(file)
@@ -57,25 +57,22 @@ end
 -- Extracts title name from an SFO file
 function extractTitle(file, tid)
     local data = System.extractSfo(file)
-    if System.doesFileExist("ux0:/data/TrackPlug/Names/" .. tid .. ".txt") then
-        System.deleteFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt")
+    if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt") then
+        System.deleteFile("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt")
     end
-    local file = System.openFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt", FCREATE)
+    local file = System.openFile("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt", FCREATE)
     System.writeFile(file, data.title, string.len(data.title))
     System.closeFile(file)
     return data.title
 end
---[[
-function extractIcon(tid)
-    local icon = System.openFile("ur0:/appmeta/" .. tid .. "/icon0.png", FREAD)
-    local fsize = System.sizeFile(icon)
-    local extractedIcon = System.readFile(icon, fsize)
-    System.closeFile(icon)
-    local file = System.openFile("ux0:/data/TrackPlug/Assets/" .. tid .. ".png", FCREATE)
-    System.writeFile(file, extractedIcon, string.len(extractedIcon))
-    System.closeFile(icon)
-    return 0
-end]]--
+
+function copyIcon(titleid)
+	newFile = System.openFile("ux0:/data/TrackPlug/Assets/" .. titleid .. "/icon0.png", FCREATE)
+	oldFile = System.openFile("ur0:/appmeta/" .. titleid .. "/icon0.png", FREAD)
+	fileSize = System.sizeFile(oldFile)
+    icon = System.readFile(oldFile, fileSize)
+	System.writeFile(newFile, icon, fileSize)
+end
 
 function getRegion(titleid)
     local regioncode = string.sub(titleid,1,4)
@@ -151,15 +148,18 @@ for i, file in pairs(tbl) do
         local titleid = string.sub(file.name,1,-5)
         file.region = getRegion(titleid)
 
-        --if System.doesFileExist("ux0:/TrackPlug/Assets/" .. titleid .. "/icon0.png") then
-        --    file.icon = Graphics.loadImage("ux0:/TrackPlug/Assets/" .. titleid .. "/icon0.png")
-        if System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
+        if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/icon0.png") then
+			file.icon = Graphics.loadImage("ux0:/data/TrackPlug/Assets/" .. titleid .. "/icon0.png")
+		elseif System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
             file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
-        --    extractIcon(titleid)
-        else    
+			System.createDirectory("ux0:/data/TrackPlug/Assets/" .. titleid .. "")
+			copyIcon(titleid)
+        else
             file.icon = unk
         end
-        if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. titleid .. ".txt") then
+        
+		
+		if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/title.txt") then
             file.title = recoverTitle(titleid)
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)

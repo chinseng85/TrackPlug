@@ -94,7 +94,10 @@ static void adrenaline_titlewriter(char *dummy_id,char *dummy_title){
     //We don't want XMB's title to be written.
     if (dummy_title[0] == 0 || !strncmp(dummy_title, "XMB", 3)) return;
     char path[128];
-    snprintf(path, 128, "ux0:/data/TrackPlug/Names/%s.txt", dummy_id);
+    char pathfolder[128];
+    snprintf(path, 128, "ux0:/data/TrackPlug/Assets/%s/title.txt", dummy_id);
+    snprintf(pathfolder, 128, "ux0:/data/TrackPlug/Assets/%s/", dummy_id);
+    int dfd = ksceIoMkdir(pathfolder,6);
     SceUID fd = ksceIoOpen(path,
         SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
     if (fd < 0) return;

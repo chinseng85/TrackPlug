@@ -217,6 +217,9 @@ int event_handler(int pid, int ev, int a3, int a4, int *a5, int a6) {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize args, void *argp) {
+    ksceIoMkdir("ux0:/data/TrackPlug",6);
+    ksceIoMkdir("ux0:/data/TrackPlug/Assets",6);
+    ksceIoMkdir("ux0:/data/TrackPlug/Records",6);
     hooks[0] = taiHookFunctionImportForKernel(KERNEL_PID,
             &event_handler_ref,
             "SceProcessmgr",

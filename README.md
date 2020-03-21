@@ -14,7 +14,8 @@ Just put BetterTrackPlug.skprx under *KERNEL in config.txt
 *KERNEL
 ur0:tai/BetterTrackPlug.skprx
 ```
-and install the vpk.
+install the vpk.
+Reboot.
 
 # Features To Be Added
 - Blacklist support so you don't have to see how much time you've spent on VitaShell.

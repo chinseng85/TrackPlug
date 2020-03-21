@@ -31,3 +31,4 @@ Please let me know if you see any bugs, it would be extremely helpful.
 - [Rinnegatamante](https://github.com/Rinnegatamante) for [LPP-Vita](https://github.com/Rinnegatamante/lpp-vita) and making the idea of TrackPlug in the first place.
 - [Electry](https://github.com/Electry/) for his code chunk responsible for getting titles inside Adrenaline.
 - **ecamci** for making the assets.
+- chinseng85 for adding the ability to store games' icons so when you remove them, you will still be able to see their icons.

@@ -1,26 +1,22 @@
 -- Creating dirs in case they do not exist
-System.createDirectory("ux0:/data/TrackPlug")
-System.createDirectory("ux0:/data/TrackPlugArchive")
-
+System.createDirectory("ux0:/data/TrackPlug/Records")
+System.createDirectory("ux0:/data/TrackPlug/Names")
+System.createDirectory("ux0:/data/TrackPlug/Config")
+System.createDirectory("ux0:/data/TrackPlug/Assets")
 -- Scanning TrackPlug folder
-local tbl = System.listDirectory("ux0:/data/TrackPlug")
-local blacklist = {
-    --"VITASHELL", -- Vitashell
-    --"TPLG00001", -- TrackPlug
-    "NPXS10028", -- PSPEMU app itself
-    "NPXS10083"
-}
+local tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
+local blacklist = {}
 -- Removing blacklisted games
 for i, file in pairs(tbl) do
 	local titleid = string.sub(file.name,1,-5)
     for k, toberemoved in pairs(blacklist) do
 	    if titleid == blacklist[k] then
-            System.deleteFile("ux0:/data/TrackPlug/"..file.name)
+            System.deleteFile("ux0:/data/TrackPlug/Records"..file.name)
         end
     end
 end
 -- Reset the table
-tbl = System.listDirectory("ux0:/data/TrackPlug")
+tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
 
 if tbl == nil then
     tbl = {}
@@ -51,7 +47,7 @@ end
 
 -- Recover title from homebrew database
 function recoverTitle(tid)
-    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt", FREAD)
+    local file = System.openFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt", FREAD)
     fsize = System.sizeFile(file)
     local title = System.readFile(file, fsize)
     System.closeFile(file)
@@ -61,14 +57,25 @@ end
 -- Extracts title name from an SFO file
 function extractTitle(file, tid)
     local data = System.extractSfo(file)
-    if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. tid .. ".txt") then
-        System.deleteFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt")
+    if System.doesFileExist("ux0:/data/TrackPlug/Names/" .. tid .. ".txt") then
+        System.deleteFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt")
     end
-    local file = System.openFile("ux0:/data/TrackPlugArchive/" .. tid .. ".txt", FCREATE)
+    local file = System.openFile("ux0:/data/TrackPlug/Names/" .. tid .. ".txt", FCREATE)
     System.writeFile(file, data.title, string.len(data.title))
     System.closeFile(file)
     return data.title
 end
+--[[
+function extractIcon(tid)
+    local icon = System.openFile("ur0:/appmeta/" .. tid .. "/icon0.png", FREAD)
+    local fsize = System.sizeFile(icon)
+    local extractedIcon = System.readFile(icon, fsize)
+    System.closeFile(icon)
+    local file = System.openFile("ux0:/data/TrackPlug/Assets/" .. tid .. ".png", FCREATE)
+    System.writeFile(file, extractedIcon, string.len(extractedIcon))
+    System.closeFile(icon)
+    return 0
+end]]--
 
 function getRegion(titleid)
     local regioncode = string.sub(titleid,1,4)
@@ -129,7 +136,6 @@ function getRegion(titleid)
     elseif string.sub(titleid,1,6) == "PSPEMU" then
         region = "PSP/PS1"
     end
-
     return region
 end
 
@@ -145,9 +151,12 @@ for i, file in pairs(tbl) do
         local titleid = string.sub(file.name,1,-5)
         file.region = getRegion(titleid)
 
+        --if System.doesFileExist("ux0:/TrackPlug/Assets/" .. titleid .. "/icon0.png") then
+        --    file.icon = Graphics.loadImage("ux0:/TrackPlug/Assets/" .. titleid .. "/icon0.png")
         if System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
             file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
-        else
+        --    extractIcon(titleid)
+        else    
             file.icon = unk
         end
         if System.doesFileExist("ux0:/data/TrackPlugArchive/" .. titleid .. ".txt") then
@@ -158,7 +167,7 @@ for i, file in pairs(tbl) do
             file.title = "Unknown - " .. titleid
         end
         file.id = titleid
-        fd = System.openFile("ux0:/data/TrackPlug/" .. file.name, FREAD)
+        fd = System.openFile("ux0:/data/TrackPlug/Records/" .. file.name, FREAD)
         file.rtime = bin2int(System.readFile(fd, 4))
         file.ptime = FormatTime(file.rtime)
         System.closeFile(fd)
@@ -167,8 +176,13 @@ end
 
 -- Background wave effect
 local colors = {
-	{Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)}	-- Black'N'Rose
+    {Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)},
+    {Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)},
+    {Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)},
+    {Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)},
+    {Color.new(72,72,72), Color.new(30,20,25), Color.new(200,180,180)}
 }
+
 if col_idx == nil then
 	col_idx = 0
 end
@@ -234,11 +248,11 @@ function showAlarm(title, select_idx)
         end
     end
     local sclr = Color.new(alarm_val, alarm_val, alarm_val)
-    Graphics.fillRect(200, 760, 200, 280, grey)
+    Graphics.fillRect(200, 760, 200, 300, grey)
     Graphics.debugPrint(205, 205, title, yellow)
-    Graphics.fillRect(200, 760, 215 + select_idx * 20, 235 + select_idx * 20, sclr)
-    Graphics.debugPrint(205, 235, "Yes", white)
-    Graphics.debugPrint(205, 255, "No", white)
+    Graphics.fillRect(200, 760, 235 + select_idx * 20, 255 + select_idx * 20, sclr)
+    Graphics.debugPrint(205, 255, "Yes", white)
+    Graphics.debugPrint(205, 275, "No", white)
 end
 -- Scroll-list Renderer
 local sel_val = 128
@@ -324,7 +338,7 @@ while #tbl > 0 do
 	wav:init()
 	RenderList()
 	if freeze then
-		showAlarm("Do you want to delete this record permanently?", f_idx)
+		showAlarm("Do you want to delete this record permanently? \n" .. tbl[list_idx].title, f_idx)
 	end
 	Graphics.termBlend()
 	Screen.flip()
@@ -356,7 +370,7 @@ while #tbl > 0 do
 	elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
 		freeze = false
 		if f_idx == 1 then -- Delete
-			System.deleteFile("ux0:/data/TrackPlug/" .. tbl[list_idx].name)
+			System.deleteFile("ux0:/data/TrackPlug/" .. tbl[list_idx].title)
 			table.remove(tbl, list_idx)
 			big_tbl = {}
 			list_idx = list_idx - 1
@@ -369,7 +383,7 @@ end
 while true do
     Graphics.initBlend()
     Screen.clear()
-    Graphics.debugPrint(5, 5, "No games tracked yet.", white)
+    Graphics.debugPrint(5, 5, "No games tracked yet. You sure you installed the plugin correctly?", white)
     Graphics.termBlend()
     Screen.flip()
     Screen.waitVblankStart()

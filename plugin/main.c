@@ -141,6 +141,7 @@ CONT:
 }
 
 void _start() __attribute__ ((weak, alias ("module_start")));
+
 int module_start(SceSize argc, const void *args) {
     char titleid[12];
     sceAppMgrAppParamGetString(0, 12, titleid, 12);

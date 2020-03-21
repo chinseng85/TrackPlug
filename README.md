@@ -24,6 +24,7 @@ I would advise you to set up your bubbles in a way that their title ID's will be
 
 As it's currently not possible for me to extract icons from inside Adrenaline, games launched directly from Adrenaline won't have any icons if there is no corresponding bubble for the said game. I also don't think it would be efficient even if I knew how to do it.
 
+Please let me know if you see any bugs, it would be extremely helpful.
 # Credits
 - Special thanks to **teakhanirons**, [dots-tb](https://github.com/dots-tb), [cuevavirus](https://github.com/cuevavirus/) and Team CBPS for helping me make this plugin and not losing their minds because of my questions. Without their help I wouldn't even know where to start.
 - [Rinnegatamante](https://github.com/Rinnegatamante) for [LPP-Vita](https://github.com/Rinnegatamante/lpp-vita) and making the idea of TrackPlug in the first place.

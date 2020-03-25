@@ -8,42 +8,36 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(TrackPlugX)
-include("${VITASDK}/share/vita.cmake" REQUIRED)
+project(BetterTrackPlug)
+include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions")
 
-include_directories(
-)
-
 link_directories(
-  ${CMAKE_CURRENT_BINARY_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
 )
-
-if (NOT ${RELEASE})
-  add_definitions(-DENABLE_LOGGING)
-endif()
 
 add_executable(${PROJECT_NAME}
-  main.c
+	main.c
 )
 
 target_link_libraries(${PROJECT_NAME}
-  gcc
-  taihen_stub
-  SceAppMgr_stub
-  SceLibKernel_stub
+  SceSysmemForDriver_stub
+  SceIofilemgrForDriver_stub
+  SceSysclibForDriver_stub
+  SceThreadmgrForDriver_stub
+  taihenForKernel_stub
+  SceDebugForDriver_stub
+  SceSysrootForKernel_stub
   SceIofilemgr_stub
   SceLibc_stub
-  SceKernelModulemgr_stub
-  SceKernelThreadMgr_stub
+  gcc
+  -nostdlib
+)
+vita_create_self(${PROJECT_NAME}.skprx ${PROJECT_NAME}
+  UNSAFE
+  CONFIG ${CMAKE_SOURCE_DIR}/BetterTrackPlug.yml
 )
 
-set_target_properties(${PROJECT_NAME}
-  PROPERTIES LINK_FLAGS "-nostdlib"
-)
-
-vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
-  CONFIG ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.yml
-)

@@ -1,15 +1,35 @@
-![Screenshot](https://i.imgur.com/FvEEEtR.png)
+![Screenshot](https://i.imgur.com/O1G0EUq.png)
+# What is this?
+A plugin that keeps track of how long you played your games, and an app to show you the values.
 
-# Known Bugs/Issues
-- Launching PSP games from Adrenaline directly causes issues, I recommend launching games from their bubbles instead.
-- Using Adrenaline Bubbles Manager, having BubbleID set to PSPEMUXXX makes the app show the title as the games initial plus d, Md or Od for example.
-- Homebrews don't show up.
-- Dead or Alive 5 Plus once made the app crash. I don't know if the issue persists.
+# How is this "Better"?
+- As it's rewritten as a kernel plugin, the files that record the playtime won't ever get corrupted.
+- It only writes to file when you close/launch or suspend/resume the games so it doesn't murder your memory card, unlike the old one.
+- Complete support for Adrenaline and Adrenaline Bubbles.
+- The app works at 60FPS instead of 30FPS.
 
-# To-Do
-- Fix all the quirks, hopefully.
-- Add customization back.
+# How do I install this?
+Just put BetterTrackPlug.skprx under *KERNEL in config.txt
+```
+*KERNEL
+ur0:tai/BetterTrackPlug.skprx
+```
+install the vpk.
+Reboot.
 
+# Features To Be Added
+- Blacklist support so you don't have to see how much time you've spent on VitaShell.
+
+# Notes
+![Bubbles](https://i.imgur.com/qZwPMXU.png)
+I would advise you to set up your bubbles in a way that their title ID's will be the same as the corresponding PSP game's title ID instead of the default PSPEMUXXX, this way, they will use the same file that stores the playtime and you won't see the game twice on the list if you launch it both from bubble or directly from adrenaline.
+
+As it's currently not possible for me to extract icons from inside Adrenaline, games launched directly from Adrenaline won't have any icons if there is no corresponding bubble for the said game. I also don't think it would be efficient even if I knew how to do it.
+
+Please let me know if you see any bugs, it would be extremely helpful.
 # Credits
-- [Rinnegatamante](https://github.com/Rinnegatamante) for creating TrackPlug in the first place.
-- [Electry](https://github.com/Electry/) for adding pspemu support.
+- Special thanks to **teakhanirons**, [dots-tb](https://github.com/dots-tb), [cuevavirus](https://github.com/cuevavirus/) and Team CBPS for helping me make this plugin and not losing their minds because of my questions. Without their help I wouldn't even know where to start.
+- [Rinnegatamante](https://github.com/Rinnegatamante) for [LPP-Vita](https://github.com/Rinnegatamante/lpp-vita) and making the idea of TrackPlug in the first place.
+- [Electry](https://github.com/Electry/) for his code chunk responsible for getting titles inside Adrenaline.
+- **ecamci** for making the assets.
+- chinseng85 for adding the ability to store games' icons so when you remove them, you will still be able to see their icons.

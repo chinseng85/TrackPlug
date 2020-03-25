@@ -60,6 +60,13 @@ function extractTitle(file, tid)
     if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt") then
         System.deleteFile("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt")
     end
+	
+	if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. tid .. "") then
+		-- Do nothing
+	else 
+		System.createDirectory("ux0:/data/TrackPlug/Assets/" .. tid .. "")
+	end
+	
     local file = System.openFile("ux0:/data/TrackPlug/Assets/" .. tid .. "/title.txt", FCREATE)
     System.writeFile(file, data.title, string.len(data.title))
     System.closeFile(file)
@@ -159,7 +166,7 @@ for i, file in pairs(tbl) do
         end
         
 		
-		if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/title.txt") then
+	if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/title.txt") then
             file.title = recoverTitle(titleid)
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)

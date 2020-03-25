@@ -147,19 +147,20 @@ for i, file in pairs(tbl) do
     else
         local titleid = string.sub(file.name,1,-5)
         file.region = getRegion(titleid)
-
         if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/icon0.png") then
 			file.icon = Graphics.loadImage("ux0:/data/TrackPlug/Assets/" .. titleid .. "/icon0.png")
-		elseif System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
-            file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
+		else
 			System.createDirectory("ux0:/data/TrackPlug/Assets/" .. titleid .. "")
-			copyIcon(titleid)
-        else
-            file.icon = unk
-        end
+			if System.doesFileExist("ur0:/appmeta/" .. titleid .. "/icon0.png") then
+				file.icon = Graphics.loadImage("ur0:/appmeta/" .. titleid .. "/icon0.png")
+				copyIcon(titleid)
+			else
+				file.icon = unk
+			end
+		end
         
 		
-		if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/title.txt") then
+	if System.doesFileExist("ux0:/data/TrackPlug/Assets/" .. titleid .. "/title.txt") then
             file.title = recoverTitle(titleid)
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)
